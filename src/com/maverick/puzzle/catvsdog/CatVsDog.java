@@ -8,148 +8,167 @@ import java.util.stream.*;
  * Created by abhinav on 2017-03-21.
  */
 public class CatVsDog {
-	public static void main(String[] args) {
-		BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
-		//		Stream<String> stream = in.lines().limit(numberOfLinesToBeRead);
-		try {
-			int numberOfTestCases = Integer.valueOf(in.readLine().trim());
-			int[] satisfiedVoters = new int[numberOfTestCases];
-			for (int i = 0; i < numberOfTestCases; i++) {
-				String[] caseConfig = in.readLine().trim().split(" ");
-				int totalCats = Integer.valueOf(caseConfig[0]);
-				int totalDogs = Integer.valueOf(caseConfig[1]);
-				int totalVoters = Integer.valueOf(caseConfig[2]);
+    private static int totalCats = 0;
+    private static int totalDogs = 0;
+    private static int totalVoters = 0;
+    private static final String catVoteRegex = "C";
+    private static final String dogVoteRegex = "D";
 
-				if (totalCats < 1 || totalCats > 100) {
-					throw new IllegalArgumentException("Invalid number of cats, rule: 1<= cats <=100");
-				}
-				if (totalDogs < 1 || totalDogs > 100) {
-					throw new IllegalArgumentException("Invalid number of dogs, rule: 1<= dogs <=100");
-				}
-				if (totalVoters < 0 || totalVoters > 500) {
-					throw new IllegalArgumentException("Invalid number of voters, rule: 0<= voters <=500");
-				}
+    public static void main(String[] args) {
+        BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
+        try {
+            int numberOfTestCases = Integer.valueOf(in.readLine().trim());
+            int[] satisfiedVoters = new int[numberOfTestCases];
+            for (int i = 0; i < numberOfTestCases; i++) {
+                String[] caseConfig = in.readLine().trim().split(" ");
+                totalCats = Integer.valueOf(caseConfig[0]);
+                totalDogs = Integer.valueOf(caseConfig[1]);
+                totalVoters = Integer.valueOf(caseConfig[2]);
 
+                validateTotalPetsAndVoters();
 
-				Map<String, Candidate> catVotesFor = new HashMap<>(totalCats);
-				Map<String, Candidate> dogVotesFor = new HashMap<>(totalDogs);
-				//				Map<String, Integer> catVotesAgainst = new HashMap<>(totalCats);
-				//				Map<String, Integer> dogVotesAgainst = new HashMap<>(totalDogs);
+                Map<String, PetCandidate> catVotes = new HashMap<>(totalCats);
+                Map<String, PetCandidate> dogVotes = new HashMap<>(totalDogs);
 
-				for (int j = 0; j < totalVoters; j++) {
-					String[] vote = in.readLine().trim().toUpperCase().split(" ");
-					if (vote.length != 2) {
-						throw new IllegalArgumentException("Invalid number of votes, rule: only 2 votes, one for a cat and one for a dog");
-					}
-					if (vote[0].startsWith("C")) {
-						int catNumber = Integer.valueOf(vote[0].split("C")[1]);
-						if (catNumber > totalCats || catNumber < 1) {
-							throw new IllegalArgumentException("Invalid cat voted");
-						}
-						if (catVotesFor.containsKey(vote[0])) {
-							catVotesFor.get(vote[0]).rankUp();
-						} else {
-							catVotesFor.put(vote[0], new Candidate(1, 1));
-						}
-					} else if (vote[0].startsWith("D")) {
-						int dogNumber = Integer.valueOf(vote[0].split("D")[1]);
-						if (dogNumber > totalDogs || dogNumber < 1) {
-							throw new IllegalArgumentException("Invalid dog voted");
-						}
-						if (dogVotesFor.containsKey(vote[0])) {
-							dogVotesFor.get(vote[0]).rankUp();
-						} else {
-							dogVotesFor.put(vote[0], new Candidate(1, 1));
-						}
-					} else {
-						throw new IllegalArgumentException("Invalid vote, only allowed for cats and dogs");
-					}
+                // read all votes line by line
+                for (int j = 0; j < totalVoters; j++) {
+                    String[] votes = in.readLine().trim().toUpperCase().split(" ");
+                    if (votes.length != 2) {
+                        throw new IllegalArgumentException("Invalid number of votes, rule: only 2 votes, one for a cat and one for a dog");
+                    }
+                    String keepVote = votes[0];
+                    String throwVote = votes[1];
+                    //check the vote to KEEP the pet
+                    if (keepVote.startsWith(catVoteRegex)) {
+                        validatePetNumber(totalCats, keepVote, catVoteRegex);
 
-					if (vote[1].startsWith("C")) {
-						int catNumber = Integer.valueOf(vote[1].split("C")[1]);
-						if (catNumber > totalCats || catNumber < 1) {
-							throw new IllegalArgumentException("Invalid cat voted");
-						}
-						if (catVotesFor.containsKey(vote[1])) {
-							catVotesFor.get(vote[1]).rankDown();
-						} else {
-							catVotesFor.put(vote[1], new Candidate(0, -1));
-						}
-					} else if (vote[1].startsWith("D")) {
-						int dogNumber = Integer.valueOf(vote[1].split("D")[1]);
-						if (dogNumber > totalDogs || dogNumber < 1) {
-							throw new IllegalArgumentException("Invalid dog voted");
-						}
-						if (dogVotesFor.containsKey(vote[1])) {
-							dogVotesFor.get(vote[1]).rankDown();
-						} else {
-							dogVotesFor.put(vote[1], new Candidate(0, -1));
-						}
-					} else {
-						throw new IllegalArgumentException("Invalid vote, only allowed for cats and dogs");
-					}
-				}
-				catVotesFor = sortByValue(catVotesFor);
-				dogVotesFor = sortByValue(dogVotesFor);
+                        if (catVotes.containsKey(keepVote)) { //already voted before
+                            catVotes.get(keepVote).rankUp();
+                        } else { //new candidate voted
+                            catVotes.put(keepVote, PetCandidate.createPetCandidateRankUp());
+                        }
+                    } else if (keepVote.startsWith(dogVoteRegex)) {
+                        validatePetNumber(totalDogs, keepVote, dogVoteRegex);
 
-				String topCatFor = catVotesFor.keySet().toArray()[0].toString();
-				Integer topCatVotesFor = catVotesFor.get(topCatFor).totalVotes;
+                        if (dogVotes.containsKey(keepVote)) {  //already voted for
+                            dogVotes.get(keepVote).rankUp();
+                        } else { //new candidate voted
+                            dogVotes.put(keepVote, PetCandidate.createPetCandidateRankUp());
+                        }
+                    } else {
+                        throw new IllegalArgumentException("Invalid vote, only allowed for cats and dogs");
+                    }
 
-				String topDogFor = dogVotesFor.keySet().toArray()[0].toString();
-				Integer topDogVotesFor = dogVotesFor.get(topDogFor).totalVotes;
+                    //check the vote to THROW-OUT the pet
+                    if (throwVote.startsWith(catVoteRegex)) {
+                        validatePetNumber(totalCats, throwVote, catVoteRegex);
 
-				if (topCatVotesFor >= topDogVotesFor) {
-					satisfiedVoters[i] = topCatVotesFor;
-				} else {
-					satisfiedVoters[i] = topDogVotesFor;
-				}
-			}
-			Arrays.stream(satisfiedVoters).forEach(n -> System.out.println(n));
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-	}
+                        if (catVotes.containsKey(throwVote)) { //already voted before
+                            catVotes.get(throwVote).rankDown();
+                        } else { //new candidate voted
+                            catVotes.put(throwVote, PetCandidate.createPetCandidateRankDown());
+                        }
+                    } else if (throwVote.startsWith(dogVoteRegex)) {
+                        validatePetNumber(totalDogs, throwVote, dogVoteRegex);
 
-	public static <K, V extends Comparable<? super V>> Map<K, V> sortByValue(Map<K, V> map) {
-		return map.entrySet()
-		          .stream()
-		          .sorted(Map.Entry.comparingByValue(Collections.reverseOrder()))
-		          .collect(Collectors.toMap(
-				          Map.Entry::getKey,
-				          Map.Entry::getValue,
-				          (e1, e2) -> e1,
-				          HashMap::new
-		          ));
-	}
+                        if (dogVotes.containsKey(throwVote)) { //already voted before
+                            dogVotes.get(throwVote).rankDown();
+                        } else { //new candidate voted
+                            dogVotes.put(throwVote, PetCandidate.createPetCandidateRankDown());
+                        }
+                    } else {
+                        throw new IllegalArgumentException("Invalid vote, only allowed for cats and dogs");
+                    }
+                }
 
-	static class Candidate implements Comparable {
-		int totalVotes;
-		int rank;
+                catVotes = sortByValue(catVotes);
+                dogVotes = sortByValue(dogVotes);
 
-		public Candidate(int totalVotes, int rank) {
-			this.totalVotes = totalVotes;
-			this.rank = rank;
-		}
+                String topCat = catVotes.entrySet().iterator().next().getKey();
+                Integer topCatVotes = catVotes.get(topCat).totalVotes;
 
-		public void rankUp() {
-			rank = +1;
-			totalVotes += 1;
-		}
+                String topDog = dogVotes.entrySet().iterator().next().getKey();
+                Integer topDogVotes = dogVotes.get(topDog).totalVotes;
 
-		public void rankDown() {
-			rank = -1;
-		}
+                if (topCatVotes >= topDogVotes) {
+                    satisfiedVoters[i] = topCatVotes;
+                } else {
+                    satisfiedVoters[i] = topDogVotes;
+                }
+            }
+            Arrays.stream(satisfiedVoters).forEach(System.out::println);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 
-		@Override
-		public int compareTo(Object o) {
-			Candidate c = (Candidate) o;
-			if (this.rank > c.rank) {
-				return 1;
-			} else if (this.rank < c.rank) {
-				return -1;
-			} else {
-				return 0;
-			}
-		}
-	}
+    private static void validateTotalPetsAndVoters() {
+        if (totalCats < 1 || totalCats > 100) {
+            throw new IllegalArgumentException("Invalid number of cats, rule: 1<= cats <=100");
+        }
+        if (totalDogs < 1 || totalDogs > 100) {
+            throw new IllegalArgumentException("Invalid number of dogs, rule: 1<= dogs <=100");
+        }
+        if (totalVoters < 0 || totalVoters > 500) {
+            throw new IllegalArgumentException("Invalid number of voters, rule: 0<= voters <=500");
+        }
+    }
+
+    private static void validatePetNumber(int totalPets, String vote, String regex) {
+        int petNumber = Integer.valueOf(vote.split(regex)[1]);
+        if (petNumber > totalPets || petNumber < 1) {
+            throw new IllegalArgumentException("Invalid pet number voted");
+        }
+    }
+
+    private static <K, V extends Comparable<? super V>> Map<K, V> sortByValue(Map<K, V> map) {
+        return map.entrySet()
+                .stream()
+                .sorted(Map.Entry.comparingByValue(Collections.reverseOrder()))
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        Map.Entry::getValue,
+                        (e1, e2) -> e1,
+                        LinkedHashMap::new
+                ));
+    }
+
+    static class PetCandidate implements Comparable {
+        int totalVotes;
+        int rank;
+
+        private PetCandidate(int totalVotes, int rank) {
+            this.totalVotes = totalVotes;
+            this.rank = rank;
+        }
+
+        static PetCandidate createPetCandidateRankUp() {
+            return new PetCandidate(1,1);
+        }
+
+        static PetCandidate createPetCandidateRankDown() {
+            return new PetCandidate(0,-1);
+        }
+
+        void rankUp() {
+            rank = +1;
+            totalVotes += 1;
+        }
+
+        void rankDown() {
+            rank = -1;
+        }
+
+        @Override
+        public int compareTo(Object o) {
+            PetCandidate c = (PetCandidate) o;
+            if (this.rank > c.rank) {
+                return 1;
+            } else if (this.rank < c.rank) {
+                return -1;
+            } else {
+                return 0;
+            }
+        }
+    }
 }
