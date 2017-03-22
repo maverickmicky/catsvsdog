@@ -95,6 +95,8 @@ public class CatVsDog {
                 } else {
                     satisfiedVoters[i] = topDogVotes;
                 }
+                catVotes.entrySet().forEach(System.out::println);
+                dogVotes.entrySet().forEach(System.out::println);
             }
             Arrays.stream(satisfiedVoters).forEach(System.out::println);
         } catch (IOException e) {
@@ -151,12 +153,12 @@ public class CatVsDog {
         }
 
         void rankUp() {
-            rank = +1;
-            totalVotes += 1;
+            ++rank;
+            ++totalVotes;
         }
 
         void rankDown() {
-            rank = -1;
+            --rank;
         }
 
         @Override
@@ -169,6 +171,14 @@ public class CatVsDog {
             } else {
                 return 0;
             }
+        }
+
+        @Override
+        public String toString() {
+            return "PetCandidate{" +
+                    "totalVotes=" + totalVotes +
+                    ", rank=" + rank +
+                    '}';
         }
     }
 }
